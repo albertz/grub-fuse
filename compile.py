@@ -27,7 +27,7 @@ configh.write("""
 #define HAVE_WORKING_O_NOFOLLOW 1
 #define HAVE_DECL_FWRITE_UNLOCKED 0
 #define HAVE_DECL_FPUTS_UNLOCKED 0
-#define NESTED_FUNC_ATTR
+#define NESTED_FUNC_ATTR __attribute__ ((__regparm__ (1)))
 #define __getopt_argv_const const
 #define _GL_UNUSED
 #if defined(__i386__)
