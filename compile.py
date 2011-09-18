@@ -40,6 +40,7 @@ configh.write("""
 #error "unknown arch"
 #endif
 #define GRUB_TARGET_SIZEOF_VOID_P SIZEOF_VOID_P
+char* strchrnul (const char *s, int c_in);
 """)
 for funcn in ["strcmp","strlen","strchr","strrchr","strdup","strtoull"]:
 	configh.write("#define grub_" + funcn + " " + funcn + "\n")
