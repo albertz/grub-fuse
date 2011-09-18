@@ -2373,6 +2373,10 @@ typedef Elf64_Xword Elf_Xword;
 #define ELF_R_TYPE(val)		ELF64_R_TYPE(val)
 #define ELF_R_INFO(sym, type)	ELF64_R_INFO(sym, type)
 
+#else
+
+#error bad GRUB_TARGET_WORDSIZE
+
 #endif /* GRUB_TARGET_WORDSIZE == 64 */
 
 #endif /* ! GRUB_ELF_H */
