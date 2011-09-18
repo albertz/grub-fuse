@@ -1255,6 +1255,24 @@ grub_reiserfs_close (grub_file_t file)
   return GRUB_ERR_NONE;
 }
 
+static int (*grub_reiserfs_dir_iterate_hook) (const char *filename,
+					const struct grub_dirhook_info *info);
+
+static int grub_reiserfs_dir_iterate (const char *filename,
+								   enum grub_fshelp_filetype filetype,
+								   grub_fshelp_node_t node);
+
+static int grub_reiserfs_dir_iterate (const char *filename,
+							  enum grub_fshelp_filetype filetype,
+							  grub_fshelp_node_t node)
+{
+	struct grub_dirhook_info info;
+	grub_memset (&info, 0, sizeof (info));
+	info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+	grub_free (node);
+	return grub_reiserfs_dir_iterate_hook (filename, &info);
+}
+
 /* Call HOOK with each file under DIR.  */
 static grub_err_t
 grub_reiserfs_dir (grub_device_t device, const char *path,
@@ -1265,20 +1283,6 @@ grub_reiserfs_dir (grub_device_t device, const char *path,
   struct grub_fshelp_node root, *found;
   struct grub_reiserfs_key root_key;
 
-  auto int NESTED_FUNC_ATTR iterate (const char *filename,
-                                     enum grub_fshelp_filetype filetype,
-                                     grub_fshelp_node_t node);
-
-  int NESTED_FUNC_ATTR iterate (const char *filename,
-                                enum grub_fshelp_filetype filetype,
-                                grub_fshelp_node_t node)
-    {
-      struct grub_dirhook_info info;
-      grub_memset (&info, 0, sizeof (info));
-      info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
-      grub_free (node);
-      return hook (filename, &info);
-    }
   grub_dl_ref (my_mod);
   data = grub_reiserfs_mount (device->disk);
   if (! data)
@@ -1299,7 +1303,8 @@ grub_reiserfs_dir (grub_device_t device, const char *path,
                          grub_reiserfs_read_symlink, GRUB_FSHELP_DIR);
   if (grub_errno)
     goto fail;
-  grub_reiserfs_iterate_dir (found, iterate);
+	grub_reiserfs_dir_iterate_hook = hook;
+  grub_reiserfs_iterate_dir (found, grub_reiserfs_dir_iterate);
   grub_free (data);
   grub_dl_unref (my_mod);
   return GRUB_ERR_NONE;
