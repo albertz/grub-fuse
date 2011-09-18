@@ -204,12 +204,13 @@ fuse_getattr (const char *path, struct stat *st)
   st->st_rdev = 0;
   if (!_fuse_getattr_file_info.dir)
     {
-      grub_file_t file;
-      file = grub_file_open (path);
-      if (! file)
+		struct grub_file file;
+		file.device = dev;
+      grub_err_t err = (fs->open) (&file, path);
+      if (err)
 	return translate_error ();
-      st->st_size = file->size;
-      grub_file_close (file);
+      st->st_size = file.size;
+      (fs->close) (&file);
     }
   else
     st->st_size = 0;
@@ -228,19 +229,25 @@ fuse_opendir (const char *path, struct fuse_file_info *fi)
 }
 
 /* FIXME */
-static grub_file_t files[65536];
-static int first_fd = 1;
+static struct grub_file files[65536];
+static int first_fd = 3;
 
 static int 
 fuse_open (const char *path, struct fuse_file_info *fi __attribute__ ((unused)))
 {
-  grub_file_t file;
-  file = grub_file_open (path);
-  if (! file)
+	if(first_fd >= sizeof(files)/sizeof(files[0]) - 2) {
+		for(first_fd = 3; first_fd < sizeof(files)/sizeof(files[0])-1; ++first_fd)
+			if(!files[first_fd+1].fs) break;
+		if(files[first_fd+1].fs)
+			return ENOMEM;
+	}
+	grub_file_t file = &files[first_fd + 1];
+	file->device = dev;
+  grub_err_t err = (fs->open) (file, path);
+  if (err)
     return translate_error ();
-  files[first_fd++] = file;
+  first_fd++;
   fi->fh = first_fd;
-  files[first_fd++] = file;
   grub_errno = GRUB_ERR_NONE;
   return 0;
 } 
@@ -249,15 +256,16 @@ static int
 fuse_read (const char *path, char *buf, size_t sz, off_t off,
 	   struct fuse_file_info *fi)
 {
-  grub_file_t file = files[fi->fh];
+  grub_file_t file = &files[fi->fh];
   grub_ssize_t size;
 
+	printf("fuse_read %s %i %i\n", path, off, sz);
   if (off > file->size)
     return -EINVAL;
 
   file->offset = off;
   
-  size = grub_file_read (file, buf, sz);
+  size = (fs->read) (file, buf, sz);
   if (size < 0)
     return translate_error ();
   else
@@ -270,8 +278,8 @@ fuse_read (const char *path, char *buf, size_t sz, off_t off,
 static int 
 fuse_release (const char *path, struct fuse_file_info *fi)
 {
-  grub_file_close (files[fi->fh]);
-  files[fi->fh] = NULL;
+  (fs->close) (&files[fi->fh]);
+  files[fi->fh].fs = NULL;
   grub_errno = GRUB_ERR_NONE;
   return 0;
 }
@@ -480,12 +488,14 @@ main (int argc, char *argv[])
 
   grub_util_init_nls ();
 
-  fuse_args = xrealloc (fuse_args, (fuse_argc + 2) * sizeof (fuse_args[0]));
+  fuse_args = xrealloc (fuse_args, (fuse_argc + 3) * sizeof (fuse_args[0]));
   fuse_args[fuse_argc] = xstrdup (argv[0]);
   fuse_argc++;
   /* Run single-threaded.  */
   fuse_args[fuse_argc] = xstrdup ("-s");
   fuse_argc++;
+	fuse_args[fuse_argc] = xstrdup ("-f"); // foreground
+	fuse_argc++;
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
   
@@ -528,13 +538,6 @@ main (int argc, char *argv[])
 	}
 	printf ("transformed OS device `%s' into GRUB device `%s'\n",
 					device_name, drive_name);
-	drive_name = grub_util_biosdisk_get_grub_dev(device_name);
-	if(!drive_name) {
-		grub_print_error();
-		return 1;
-	}
-	printf ("transformed OS device `%s' into GRUB device `%s'\n",
-			device_name, drive_name);
 	
 	grub_env_set ("root", drive_name);
 
