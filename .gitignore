@@ -1,0 +1,4 @@
+/configure
+*.log
+*.cache
+/build
