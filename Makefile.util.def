@@ -78,8 +78,8 @@ library = {
   common = grub-core/lib/crypto.c;
   common = grub-core/lib/envblk.c;
   common = grub-core/lib/hexdump.c;
-  common = grub-core/lib/libgcrypt-grub/cipher/sha512.c;
-  common = grub-core/lib/libgcrypt-grub/cipher/crc.c;
+#  common = grub-core/lib/libgcrypt/cipher/sha512.c;
+#  common = grub-core/lib/libgcrypt/cipher/crc.c;
   common = grub-core/lib/LzFind.c;
   common = grub-core/lib/LzmaEnc.c;
   common = grub-core/lib/pbkdf2.c;
@@ -93,11 +93,11 @@ library = {
   common = grub-core/partmap/sun.c;
   common = grub-core/partmap/sunpc.c;
   common = grub-core/partmap/bsdlabel.c;
-  common = grub-core/script/function.c;
-  common = grub-core/script/lexer.c;
-  common = grub-core/script/main.c;
-  common = grub-core/script/script.c;
-  common = grub-core/script/argv.c;
+#  common = grub-core/script/function.c;
+#  common = grub-core/script/lexer.c;
+#  common = grub-core/script/main.c;
+#  common = grub-core/script/script.c;
+#  common = grub-core/script/argv.c;
 };
 
 program = {
