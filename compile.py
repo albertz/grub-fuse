@@ -11,7 +11,7 @@ from fnmatch import fnmatch
 from pipes import quote
 from pprint import pprint
 
-CFLAGS = "-g -Iinclude -Igrub-core/gnulib " + \
+CFLAGS = "-g -Wall -Iinclude -Igrub-core/gnulib " + \
 	"-Ibuild -DLIBDIR=\\\"/usr/local/lib\\\" " + \
 	"-DHAVE_CONFIG_H=1 -DGRUB_UTIL=1 " + \
 	"-DGRUB_FILE=__FILE__ " + \
@@ -27,9 +27,15 @@ configh.write("""
 #define HAVE_WORKING_O_NOFOLLOW 1
 #define HAVE_DECL_FWRITE_UNLOCKED 0
 #define HAVE_DECL_FPUTS_UNLOCKED 0
-#define NESTED_FUNC_ATTR __attribute__ ((__regparm__ (1)))
 #define __getopt_argv_const const
 #define _GL_UNUSED
+
+#if defined(__i386__)
+#define NESTED_FUNC_ATTR __attribute__ ((__regparm__ (1)))
+#else
+#define NESTED_FUNC_ATTR
+#endif
+
 #if defined(__i386__)
 #define SIZEOF_LONG 4
 #define SIZEOF_VOID_P 4
@@ -40,6 +46,7 @@ configh.write("""
 #error "unknown arch"
 #endif
 #define GRUB_TARGET_SIZEOF_VOID_P SIZEOF_VOID_P
+
 char* strchrnul (const char *s, int c_in);
 """)
 for funcn in ["strcmp","strlen","strchr","strrchr","strdup","strtoull"]:
