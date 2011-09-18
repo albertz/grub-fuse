@@ -20,6 +20,9 @@
 #include <config.h>
 #include <grub/types.h>
 #include <grub/emu/misc.h>
+#include <grub/emu/getroot.h>
+#include <grub/emu/hostdisk.h>
+#include <grub/partition.h>
 #include <grub/util/misc.h>
 #include <grub/misc.h>
 #include <grub/device.h>
@@ -305,33 +308,30 @@ struct fuse_operations grub_opers = {
   .read = fuse_read
 };
 
+int dummy_hook(const char* name) {
+	printf("huhu: %s\n", name);
+}
+
+char* full_dev_name = NULL;
+
+int partition_iterhook(grub_disk_t disk, const grub_partition_t partition) {
+	char* part_name = grub_partition_get_name(partition);
+	printf("*** part: %s, index: %i\n", part_name, partition->index);
+	char buf[1024];
+	snprintf(buf, sizeof(buf), "%ss%i", grub_env_get ("root"), partition->index + 1);
+	if(strcmp(buf, images[0]) == 0) {
+		printf("*** found: matches to %s\n", images[0]);
+		full_dev_name = malloc(1024);
+		snprintf(full_dev_name, 1024, "%s,%s", grub_env_get ("root"), part_name);		
+		return 1;
+	}
+	return 0;
+}
+
 static grub_err_t
 fuse_init (void)
 {
   int i;
-
-  for (i = 0; i < num_disks; i++)
-    {
-      char *argv[2];
-      char *host_file;
-      char *loop_name;
-      loop_name = grub_xasprintf ("loop%d", i);
-      if (!loop_name)
-	grub_util_error (grub_errmsg);
-
-      host_file = grub_xasprintf ("(host)%s", images[i]);
-      if (!host_file)
-	grub_util_error (grub_errmsg);
-
-      argv[0] = loop_name;
-      argv[1] = host_file;
-
-      if (execute_command ("loopback", 2, argv))
-        grub_util_error (_("loopback command fails"));
-
-      grub_free (loop_name);
-      grub_free (host_file);
-    }
 
   grub_lvm_fini ();
   grub_mdraid09_fini ();
@@ -341,36 +341,52 @@ fuse_init (void)
   grub_mdraid09_init ();
   grub_mdraid1x_init ();
   grub_lvm_init ();
-
-  dev = grub_device_open (0);
-  if (! dev)
+	
+	dev = grub_device_open (0);
+  if (! dev) {
+	  printf("grub_device_open failed\n");
     return grub_errno;
+  }
+
+	printf("** opened device\n");
+	grub_partition_iterate(dev->disk, partition_iterhook);
+	if(!full_dev_name) {
+		printf("partition not found\n");
+		return grub_errno;		
+	}
+	
+	printf("** opening %s\n", full_dev_name);
+	dev = grub_device_open(full_dev_name);
+	if (! dev) {
+		printf("grub_device_open failed\n");
+		return grub_errno;
+	}
+	
+	{
+
+		grub_disk_t disk = dev->disk;
+		grub_partition_t part;
+		
+		if (disk->partition == NULL)
+		{
+			printf ("no partition map found for %s\n", disk->name);
+			//return;
+		}
+		else
+		for (part = disk->partition; part; part = part->parent)
+			printf ("part: %s\n", part->partmap->name);
+	}
 
   fs = grub_fs_probe (dev);
   if (! fs)
     {
+		printf("grub_fs_probe failed\n");
       grub_device_close (dev);
       return grub_errno;
     }
 
+	printf("yea, fuse_main!\n");
   fuse_main (fuse_argc, fuse_args, &grub_opers, NULL);
-
-  for (i = 0; i < num_disks; i++)
-    {
-      char *argv[2];
-      char *loop_name;
-
-      loop_name = grub_xasprintf ("loop%d", i);
-      if (!loop_name)
-	grub_util_error (grub_errmsg);
-
-      argv[0] = "-d";      
-      argv[1] = loop_name;
-
-      execute_command ("loopback", 2, argv);
-
-      grub_free (loop_name);
-    }
 
   return GRUB_ERR_NONE;
 }
@@ -440,6 +456,13 @@ struct argp argp = {
   NULL, NULL, NULL
 };
 
+static int  process_device (const char *name, int is_floppy)
+{
+	printf("dev: %s\n", name);
+	return 0;
+}
+
+
 int
 main (int argc, char *argv[])
 {
@@ -466,6 +489,8 @@ main (int argc, char *argv[])
   fuse_argc++;
   num_disks--;
   fuse_args[fuse_argc] = NULL;
+	
+	grub_util_biosdisk_init("");
 
   /* Initialize all modules. */
   grub_init_all ();
@@ -473,7 +498,7 @@ main (int argc, char *argv[])
   if (debug_str)
     grub_env_set ("debug", debug_str);
 
-  default_root = (num_disks == 1) ? "loop0" : "md0";
+  //default_root = "disk3"; //(num_disks == 1) ? "loop0" : "md0";
   alloc_root = 0;
   if (root)
     {
@@ -488,7 +513,23 @@ main (int argc, char *argv[])
   else
     root = default_root;
 
-  grub_env_set ("root", root);
+	char* device_name = images[0];
+	char* drive_name = grub_util_get_grub_dev(device_name);
+	if(!drive_name) {
+		grub_print_error();
+		return 1;
+	}
+	printf ("transformed OS device `%s' into GRUB device `%s'\n",
+					device_name, drive_name);
+	drive_name = grub_util_biosdisk_get_grub_dev(device_name);
+	if(!drive_name) {
+		grub_print_error();
+		return 1;
+	}
+	printf ("transformed OS device `%s' into GRUB device `%s'\n",
+			device_name, drive_name);
+	
+	grub_env_set ("root", drive_name);
 
   if (alloc_root)
     free (alloc_root);
