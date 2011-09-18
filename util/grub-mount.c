@@ -488,8 +488,8 @@ main (int argc, char *argv[])
   /* Run single-threaded.  */
   fuse_args[fuse_argc] = xstrdup ("-s");
   fuse_argc++;
-	fuse_args[fuse_argc] = xstrdup ("-f"); // foreground
-	fuse_argc++;
+//	fuse_args[fuse_argc] = xstrdup ("-f"); // foreground
+//	fuse_argc++;
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
   
