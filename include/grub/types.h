@@ -20,7 +20,7 @@
 #define GRUB_TYPES_HEADER	1
 
 #include <config.h>
-#include <grub/cpu/types.h>
+//#include <grub/cpu/types.h>
 
 #ifdef GRUB_UTIL
 # define GRUB_CPU_SIZEOF_VOID_P	SIZEOF_VOID_P
