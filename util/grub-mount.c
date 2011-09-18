@@ -117,30 +117,33 @@ translate_error (void)
   return ret;
 }
 
+static struct grub_dirhook_info _fuse_getattr_file_info;
+static int _fuse_getattr_file_exists = 0;
+static char* _fuse_getattr_filename = NULL;
+
+/* A hook for iterating directories. */
+int _fuse_getattr_find_file (const char *cur_filename,
+					const struct grub_dirhook_info *info);
+int _fuse_getattr_find_file (const char *cur_filename,
+			   const struct grub_dirhook_info *info)
+{
+    if ((info->case_insensitive ? grub_strcasecmp (cur_filename, _fuse_getattr_filename)
+		 : grub_strcmp (cur_filename, _fuse_getattr_filename)) == 0)
+	{
+		_fuse_getattr_file_info = *info;
+		_fuse_getattr_file_exists = 1;
+		return 1;
+	}
+    return 0;
+}
+
 static int
 fuse_getattr (const char *path, struct stat *st)
 {
   char *filename, *pathname, *path2;
   const char *pathname_t;
-  struct grub_dirhook_info file_info;
-  int file_exists = 0;
+  _fuse_getattr_file_exists = 0;
   
-  /* A hook for iterating directories. */
-  auto int find_file (const char *cur_filename,
-		      const struct grub_dirhook_info *info);
-  int find_file (const char *cur_filename,
-		 const struct grub_dirhook_info *info)
-  {
-    if ((info->case_insensitive ? grub_strcasecmp (cur_filename, filename)
-	 : grub_strcmp (cur_filename, filename)) == 0)
-      {
-	file_info = *info;
-	file_exists = 1;
-	return 1;
-      }
-    return 0;
-  }
-
   if (path[0] == '/' && path[1] == 0)
     {
       st->st_dev = 0;
@@ -156,7 +159,7 @@ fuse_getattr (const char *path, struct stat *st)
       return 0;
     }
 
-  file_exists = 0;
+  _fuse_getattr_file_exists = 0;
 
   pathname_t = grub_strchr (path, ')');
   if (! pathname_t)
@@ -184,21 +187,22 @@ fuse_getattr (const char *path, struct stat *st)
     }
 
   /* It's the whole device. */
-  (fs->dir) (dev, path2, find_file);
+	_fuse_getattr_filename = filename;
+  (fs->dir) (dev, path2, _fuse_getattr_find_file);
 
   grub_free (path2);
-  if (!file_exists)
+  if (!_fuse_getattr_file_exists)
     {
       grub_errno = GRUB_ERR_NONE;
       return -ENOENT;
     }
   st->st_dev = 0;
   st->st_ino = 0;
-  st->st_mode = file_info.dir ? (0555 | S_IFDIR) : (0444 | S_IFREG);
+  st->st_mode = _fuse_getattr_file_info.dir ? (0555 | S_IFDIR) : (0444 | S_IFREG);
   st->st_uid = 0;
   st->st_gid = 0;
   st->st_rdev = 0;
-  if (!file_info.dir)
+  if (!_fuse_getattr_file_info.dir)
     {
       grub_file_t file;
       file = grub_file_open (path);
@@ -211,8 +215,8 @@ fuse_getattr (const char *path, struct stat *st)
     st->st_size = 0;
   st->st_blksize = 512;
   st->st_blocks = (st->st_size + 511) >> 9;
-  st->st_atime = st->st_mtime = st->st_ctime = file_info.mtimeset
-    ? file_info.mtime : 0;
+  st->st_atime = st->st_mtime = st->st_ctime = _fuse_getattr_file_info.mtimeset
+    ? _fuse_getattr_file_info.mtime : 0;
   grub_errno = GRUB_ERR_NONE;
   return 0;
 }
