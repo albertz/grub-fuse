@@ -58,39 +58,41 @@ grub_partition_check_containment (const grub_disk_t disk,
   return 1;
 }
 
+static grub_partition_t find_func_p = 0;
+static int find_func_partnum = 0;
+
+static int find_func (grub_disk_t dsk,
+			   const grub_partition_t partition)
+{
+	if (find_func_partnum != partition->number)
+		return 0;
+	
+	if (!(grub_partition_check_containment (dsk, partition)))
+		return 0;
+	
+	find_func_p = (grub_partition_t) grub_malloc (sizeof (*find_func_p));
+	if (! find_func_p)
+		return 1;
+	
+	grub_memcpy (find_func_p, partition, sizeof (*find_func_p));
+	return 1;
+}
+
 static grub_partition_t
 grub_partition_map_probe (const grub_partition_map_t partmap,
 			  grub_disk_t disk, int partnum)
 {
-  grub_partition_t p = 0;
-
-  auto int find_func (grub_disk_t d, const grub_partition_t partition);
-
-  int find_func (grub_disk_t dsk,
-		 const grub_partition_t partition)
-    {
-      if (partnum != partition->number)
-	return 0;
-
-      if (!(grub_partition_check_containment (dsk, partition)))
-	return 0;
-
-      p = (grub_partition_t) grub_malloc (sizeof (*p));
-      if (! p)
-	return 1;
-
-      grub_memcpy (p, partition, sizeof (*p));
-      return 1;
-    }
+	find_func_p = 0;
+	find_func_partnum = partnum;
 
   partmap->iterate (disk, find_func);
   if (grub_errno)
     goto fail;
 
-  return p;
+  return find_func_p;
 
  fail:
-  grub_free (p);
+  grub_free (find_func_p);
   return 0;
 }
 
@@ -161,48 +163,53 @@ grub_partition_probe (struct grub_disk *disk, const char *str)
   return part;
 }
 
+
+static int* part_iterate_ret = NULL;
+static int (*part_iterate_hook) (grub_disk_t disk,
+			 const grub_partition_t partition);
+
+static int part_iterate (grub_disk_t dsk,
+				  const grub_partition_t partition)
+{
+	struct grub_partition p = *partition;
+	
+	if (!(grub_partition_check_containment (dsk, partition)))
+		return 0;
+	
+	p.parent = dsk->partition;
+	dsk->partition = 0;
+	if (part_iterate_hook (dsk, &p))
+	{
+		*part_iterate_ret = 1;
+		return 1;
+	}
+	if (p.start != 0)
+	{
+		const struct grub_partition_map *partmap;
+		dsk->partition = &p;
+		FOR_PARTITION_MAPS(partmap)
+		{
+			grub_err_t err;
+			err = partmap->iterate (dsk, part_iterate);
+			if (err)
+				grub_errno = GRUB_ERR_NONE;
+			if (*part_iterate_ret)
+				break;
+		}
+	}
+	dsk->partition = p.parent;
+	return *part_iterate_ret;
+}
+
 int
 grub_partition_iterate (struct grub_disk *disk,
 			int (*hook) (grub_disk_t disk,
 				     const grub_partition_t partition))
 {
   int ret = 0;
-
-  auto int part_iterate (grub_disk_t dsk, const grub_partition_t p);
-
-  int part_iterate (grub_disk_t dsk,
-		    const grub_partition_t partition)
-    {
-      struct grub_partition p = *partition;
-
-      if (!(grub_partition_check_containment (dsk, partition)))
-	return 0;
-
-      p.parent = dsk->partition;
-      dsk->partition = 0;
-      if (hook (dsk, &p))
-	{
-	  ret = 1;
-	  return 1;
-	}
-      if (p.start != 0)
-	{
-	  const struct grub_partition_map *partmap;
-	  dsk->partition = &p;
-	  FOR_PARTITION_MAPS(partmap)
-	  {
-	    grub_err_t err;
-	    err = partmap->iterate (dsk, part_iterate);
-	    if (err)
-	      grub_errno = GRUB_ERR_NONE;
-	    if (ret)
-	      break;
-	  }
-	}
-      dsk->partition = p.parent;
-      return ret;
-    }
-
+	part_iterate_ret = &ret;
+	part_iterate_hook = hook;
+	
   {
     const struct grub_partition_map *partmap;
     FOR_PARTITION_MAPS(partmap)
