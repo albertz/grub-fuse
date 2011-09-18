@@ -21,7 +21,7 @@
 
 #include <grub/types.h>
 #include <grub/symbol.h>
-#include <grub/cpu/time.h>
+//#include <grub/cpu/time.h>
 
 #if defined (GRUB_MACHINE_EMU) || defined (GRUB_UTIL)
 #define GRUB_TICKS_PER_SECOND 100000
