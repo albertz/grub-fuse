@@ -148,6 +148,8 @@ netopenbsdlabel_partition_map_iterate (grub_disk_t disk, grub_uint8_t type,
 				       int (*hook) (grub_disk_t disk,
 						    const grub_partition_t partition))
 {
+	// XXX This function crashes! just commenting out for now!
+	return 0;
   int count = 0;
 
   auto int check_msdos (grub_disk_t dsk,
