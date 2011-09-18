@@ -23,6 +23,42 @@
 #include <grub/disk.h>
 #include <grub/fshelp.h>
 
+static grub_fshelp_node_t find_file_rootnode = NULL;
+
+static grub_fshelp_node_t find_file_currroot = NULL;
+static char** find_file_name = NULL;
+static grub_fshelp_node_t* find_file_currnode = NULL;
+static grub_fshelp_node_t* find_file_oldnode = NULL;
+static enum grub_fshelp_filetype* find_file_type = NULL;
+
+static void free_node (grub_fshelp_node_t node)
+{
+	if (node != find_file_rootnode && node != find_file_currroot)
+		grub_free (node);
+}
+
+static int iterate (const char *filename,
+							  enum grub_fshelp_filetype filetype,
+							  grub_fshelp_node_t node)
+{
+	if (filetype == GRUB_FSHELP_UNKNOWN ||
+		(grub_strcmp (*find_file_name, filename) &&
+		 (! (filetype & GRUB_FSHELP_CASE_INSENSITIVE) ||
+		  grub_strncasecmp (*find_file_name, filename, GRUB_LONG_MAX))))
+	{
+		grub_free (node);
+		return 0;
+	}
+	
+	/* The node is found, stop iterating over the nodes.  */
+	*find_file_type = filetype & ~GRUB_FSHELP_CASE_INSENSITIVE;
+	*find_file_oldnode = *find_file_currnode;
+	*find_file_currnode = node;
+	
+	return 1;
+}
+
+
 static enum grub_fshelp_filetype find_file_foundtype;
 static int (*find_file_iterate_dir) (grub_fshelp_node_t dir,
 					int NESTED_FUNC_ATTR (*hook)
@@ -31,13 +67,19 @@ static int (*find_file_iterate_dir) (grub_fshelp_node_t dir,
 					 grub_fshelp_node_t node));
 static char *(*find_file_read_symlink) (grub_fshelp_node_t node);
 
-static grub_fshelp_node_t find_file_rootnode = NULL;
 static int find_file_symlinktest = 0;
 
 static grub_err_t NESTED_FUNC_ATTR find_file (const char *currpath,
 									   grub_fshelp_node_t currroot,
 									   grub_fshelp_node_t *currfound)
 {
+#define FIND_FILE_RECOVERVARS { \
+find_file_currroot = currroot; \
+find_file_name = &name; \
+find_file_currnode = &currnode; \
+find_file_oldnode = &oldnode; \
+find_file_type = &type; \
+}
 	char fpath[grub_strlen (currpath) + 1];
 	char *name = fpath;
 	char *next;
@@ -45,40 +87,9 @@ static grub_err_t NESTED_FUNC_ATTR find_file (const char *currpath,
 	enum grub_fshelp_filetype type = GRUB_FSHELP_DIR;
 	grub_fshelp_node_t currnode = currroot;
 	grub_fshelp_node_t oldnode = currroot;
-	
-	auto int NESTED_FUNC_ATTR iterate (const char *filename,
-									   enum grub_fshelp_filetype filetype,
-									   grub_fshelp_node_t node);
-	
-	auto void free_node (grub_fshelp_node_t node);
-	
-	void free_node (grub_fshelp_node_t node)
-	{
-		if (node != find_file_rootnode && node != currroot)
-			grub_free (node);
-	}
-	
-	int NESTED_FUNC_ATTR iterate (const char *filename,
-								  enum grub_fshelp_filetype filetype,
-								  grub_fshelp_node_t node)
-	{
-		if (filetype == GRUB_FSHELP_UNKNOWN ||
-			(grub_strcmp (name, filename) &&
-			 (! (filetype & GRUB_FSHELP_CASE_INSENSITIVE) ||
-			  grub_strncasecmp (name, filename, GRUB_LONG_MAX))))
-	    {
-			grub_free (node);
-			return 0;
-	    }
-		
-		/* The node is found, stop iterating over the nodes.  */
-		type = filetype & ~GRUB_FSHELP_CASE_INSENSITIVE;
-		oldnode = currnode;
-		currnode = node;
-		
-		return 1;
-	}
-	
+
+	FIND_FILE_RECOVERVARS;
+
 	grub_strncpy (fpath, currpath, grub_strlen (currpath) + 1);
 	
 	/* Remove all leading slashes.  */
@@ -114,6 +125,7 @@ static grub_err_t NESTED_FUNC_ATTR find_file (const char *currpath,
 		
 		/* Iterate over the directory.  */
 		found = find_file_iterate_dir (currnode, iterate);
+		FIND_FILE_RECOVERVARS;
 		if (! found)
 	    {
 			if (grub_errno)
@@ -137,6 +149,7 @@ static grub_err_t NESTED_FUNC_ATTR find_file (const char *currpath,
 			}
 			
 			symlink = find_file_read_symlink (currnode);
+			FIND_FILE_RECOVERVARS;
 			free_node (currnode);
 			
 			if (!symlink)
@@ -154,6 +167,7 @@ static grub_err_t NESTED_FUNC_ATTR find_file (const char *currpath,
 			
 			/* Lookup the node the symlink points to.  */
 			find_file (symlink, oldnode, &currnode);
+			FIND_FILE_RECOVERVARS;
 			type = find_file_foundtype;
 			grub_free (symlink);
 			
