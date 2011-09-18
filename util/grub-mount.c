@@ -276,19 +276,19 @@ fuse_release (const char *path, struct fuse_file_info *fi)
   return 0;
 }
 
+static void* _fuse_readdir_buf = NULL;
+static fuse_fill_dir_t _fuse_readdir_fill = NULL;
+static int _fuse_readdir_call_fill (const char *filename, const struct grub_dirhook_info *info)
+{
+    _fuse_readdir_fill (_fuse_readdir_buf, filename, NULL, 0);
+    return 0;
+}
+
 static int 
 fuse_readdir (const char *path, void *buf,
 	      fuse_fill_dir_t fill, off_t off, struct fuse_file_info *fi)
 {
   char *pathname;
-
-  auto int call_fill (const char *filename,
-		      const struct grub_dirhook_info *info);
-  int call_fill (const char *filename, const struct grub_dirhook_info *info)
-  {
-    fill (buf, filename, NULL, 0);
-    return 0;
-  }
 
   pathname = xstrdup (path);
   
@@ -297,7 +297,9 @@ fuse_readdir (const char *path, void *buf,
 	 && pathname[grub_strlen (pathname) - 1] == '/')
     pathname[grub_strlen (pathname) - 1] = 0;
 
-  (fs->dir) (dev, pathname, call_fill);
+	_fuse_readdir_buf = buf;
+	_fuse_readdir_fill = fill;
+  (fs->dir) (dev, pathname, _fuse_readdir_call_fill);
   free (pathname);
   grub_errno = GRUB_ERR_NONE;
   return 0;
