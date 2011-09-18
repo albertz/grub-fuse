@@ -23,6 +23,7 @@
 #include <grub/mm.h>
 #include <stdlib.h>
 #include <string.h>
+#include <grub/emu/misc.h>
 
 void *
 grub_malloc (grub_size_t size)
