@@ -239,7 +239,7 @@ fuse_open (const char *path, struct fuse_file_info *fi __attribute__ ((unused)))
 		for(first_fd = 3; first_fd < sizeof(files)/sizeof(files[0])-1; ++first_fd)
 			if(!files[first_fd+1].fs) break;
 		if(files[first_fd+1].fs)
-			return ENOMEM;
+			return -ENOMEM;
 	}
 	grub_file_t file = &files[first_fd + 1];
 	file->device = dev;
@@ -259,7 +259,6 @@ fuse_read (const char *path, char *buf, size_t sz, off_t off,
   grub_file_t file = &files[fi->fh];
   grub_ssize_t size;
 
-	printf("fuse_read %s %i %i\n", path, off, sz);
   if (off > file->size)
     return -EINVAL;
 
@@ -321,11 +320,6 @@ struct fuse_operations grub_opers = {
   .readdir = fuse_readdir,
   .read = fuse_read
 };
-
-int dummy_hook(const char* name) {
-	printf("huhu: %s\n", name);
-	return 0;
-}
 
 char* full_dev_name = NULL;
 
