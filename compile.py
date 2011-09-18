@@ -6,6 +6,7 @@ os.chdir(os.path.dirname(__file__))
 try: os.mkdir("build")
 except: pass
 
+import re
 from fnmatch import fnmatch
 from pipes import quote
 from pprint import pprint
@@ -43,7 +44,9 @@ configh.close()
 
 open("build/config-util.h", "w").write("")
 
+re_grubmodinit = re.compile("GRUB_MOD_INIT\((.+)\)")
 ofiles = []
+grubmods = []
 def compile(fn):
 	basen,ext = os.path.splitext(fn)
 	ofile = "build/" + basen.replace("/","_") + ".o"
@@ -52,8 +55,9 @@ def compile(fn):
 	print cmd
 	assert os.system(cmd) == 0
 	ofiles.append(ofile)
-
-import re
+	m = re_grubmodinit.search(open(fn).read())
+	if m: grubmods.append(m.group(1))
+	
 re_base_start = re.compile("^([a-z]+) = {")
 re_base_end = re.compile("^};")
 re_entry_stmnt = re.compile("^ *([a-z_0-9]+);$")
@@ -151,6 +155,9 @@ while True:
 for f in read_gnulib_makefile():
 	if not fnmatch(f, "*.c"): continue
 	compile("grub-core/gnulib/" + f)
+
+assert os.system("sh geninit.sh " + " ".join(map(quote, grubmods)) + " >build/grubinit.c") == 0
+compile("build/grubinit.c")
 
 cmd = "gcc " + LDFLAGS + " " + " ".join(map(quote, ofiles)) + " -o build/grub-mount"
 print cmd
