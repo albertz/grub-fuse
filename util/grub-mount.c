@@ -388,7 +388,6 @@ print_version (FILE *stream, struct argp_state *state)
 {
   fprintf (stream, "%s (%s) %s\n", program_name, PACKAGE_NAME, PACKAGE_VERSION);
 }
-void (*argp_program_version_hook) (FILE *, struct argp_state *) = print_version;
 
 error_t 
 argp_parser (int key, char *arg, struct argp_state *state)
@@ -447,6 +446,7 @@ main (int argc, char *argv[])
   char *default_root, *alloc_root;
 
   set_program_name (argv[0]);
+  argp_program_version_hook = print_version;
 
   grub_util_init_nls ();
 
