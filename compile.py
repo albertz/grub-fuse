@@ -11,7 +11,7 @@ from fnmatch import fnmatch
 from pipes import quote
 from pprint import pprint
 
-CFLAGS = "-Iinclude -Igrub-core/gnulib " + \
+CFLAGS = "-g -Iinclude -Igrub-core/gnulib " + \
 	"-Ibuild -DLIBDIR=\\\"/usr/local/lib\\\" " + \
 	"-DHAVE_CONFIG_H=1 -DGRUB_UTIL=1 " + \
 	"-DGRUB_FILE=__FILE__ " + \
@@ -26,7 +26,10 @@ configh.write("""
 #define PACKAGE_VERSION "1.0.0"
 #define HAVE_WORKING_O_NOFOLLOW 1
 #define HAVE_DECL_FWRITE_UNLOCKED 0
+#define HAVE_DECL_FPUTS_UNLOCKED 0
 #define NESTED_FUNC_ATTR
+#define __getopt_argv_const const
+#define _GL_UNUSED
 #if defined(__i386__)
 #define SIZEOF_LONG 4
 #define SIZEOF_VOID_P 4
@@ -158,6 +161,14 @@ for f in read_gnulib_makefile():
 
 assert os.system("sh geninit.sh " + " ".join(map(quote, grubmods)) + " >build/grubinit.c") == 0
 compile("build/grubinit.c")
+
+# additional stuff
+compile("grub-core/gnulib/mempcpy.c")
+compile("grub-core/gnulib/strchrnul.c")
+compile("grub-core/gnulib/getopt.c")
+compile("grub-core/gnulib/getopt1.c")
+compile("grub-core/gnulib/rawmemchr.c")
+compile("grub-core/gnulib/basename-lgpl.c")
 
 cmd = "gcc " + LDFLAGS + " " + " ".join(map(quote, ofiles)) + " -o build/grub-mount"
 print cmd
