@@ -316,6 +316,7 @@ struct fuse_operations grub_opers = {
 
 int dummy_hook(const char* name) {
 	printf("huhu: %s\n", name);
+	return 0;
 }
 
 char* full_dev_name = NULL;
