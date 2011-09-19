@@ -598,6 +598,43 @@ grub_fat_iterate_dir (grub_disk_t disk, struct grub_fat_data *data,
 }
 
 
+static char* iter_hook_dirname = NULL;
+static int iter_hook__call_hook = 0;
+static int (*iter_hook__hook) (const char *filename,
+								   const struct grub_dirhook_info *info);
+static int iter_hook__found = 0;
+static struct grub_fat_data* iter_hook__data = NULL;
+static int iter_hook (const char *filename, struct grub_fat_dir_entry *dir)
+{
+    struct grub_dirhook_info info;
+    grub_memset (&info, 0, sizeof (info));
+	
+    info.dir = !! (dir->attr & GRUB_FAT_ATTR_DIRECTORY);
+    info.case_insensitive = 1;
+	
+    if (dir->attr & GRUB_FAT_ATTR_VOLUME_ID)
+		return 0;
+    if (*iter_hook_dirname == '\0' && iter_hook__call_hook)
+		return iter_hook__hook (filename, &info);
+	
+    if (grub_strcasecmp (iter_hook_dirname, filename) == 0)
+	{
+		iter_hook__found = 1;
+		iter_hook__data->attr = dir->attr;
+		iter_hook__data->file_size = grub_le_to_cpu32 (dir->file_size);
+		iter_hook__data->file_cluster = ((grub_le_to_cpu16 (dir->first_cluster_high) << 16)
+							  | grub_le_to_cpu16 (dir->first_cluster_low));
+		iter_hook__data->cur_cluster_num = ~0U;
+		
+		if (iter_hook__call_hook)
+			iter_hook__hook (filename, &info);
+		
+		return 1;
+	}
+    return 0;
+}
+
+
 /* Find the underlying directory or file in PATH and return the
    next path. If there is no next path or an error occurs, return NULL.
    If HOOK is specified, call it with each file name.  */
@@ -609,38 +646,6 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 {
   char *dirname, *dirp;
   int call_hook;
-  int found = 0;
-
-  auto int iter_hook (const char *filename, struct grub_fat_dir_entry *dir);
-  int iter_hook (const char *filename, struct grub_fat_dir_entry *dir)
-  {
-    struct grub_dirhook_info info;
-    grub_memset (&info, 0, sizeof (info));
-
-    info.dir = !! (dir->attr & GRUB_FAT_ATTR_DIRECTORY);
-    info.case_insensitive = 1;
-
-    if (dir->attr & GRUB_FAT_ATTR_VOLUME_ID)
-      return 0;
-    if (*dirname == '\0' && call_hook)
-      return hook (filename, &info);
-
-    if (grub_strcasecmp (dirname, filename) == 0)
-      {
-	found = 1;
-	data->attr = dir->attr;
-	data->file_size = grub_le_to_cpu32 (dir->file_size);
-	data->file_cluster = ((grub_le_to_cpu16 (dir->first_cluster_high) << 16)
-			      | grub_le_to_cpu16 (dir->first_cluster_low));
-	data->cur_cluster_num = ~0U;
-
-	if (call_hook)
-	  hook (filename, &info);
-
-	return 1;
-      }
-    return 0;
-  }
 
   if (! (data->attr & GRUB_FAT_ATTR_DIRECTORY))
     {
@@ -670,13 +675,18 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 
   call_hook = (! dirp && hook);
 
+	iter_hook__found = 0;
+	iter_hook__call_hook = call_hook;
+	iter_hook__hook = hook;
+	iter_hook_dirname = dirname;
+	iter_hook__data = data;
   grub_fat_iterate_dir (disk, data, iter_hook);
-  if (grub_errno == GRUB_ERR_NONE && ! found && !call_hook)
+  if (grub_errno == GRUB_ERR_NONE && ! iter_hook__found && !call_hook)
     grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
 
   grub_free (dirname);
 
-  return found ? dirp : 0;
+  return iter_hook__found ? dirp : 0;
 }
 
 static grub_err_t
