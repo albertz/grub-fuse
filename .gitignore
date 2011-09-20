@@ -2,3 +2,5 @@
 *.log
 *.cache
 /build
+xcuserdata
+.DS_Store
