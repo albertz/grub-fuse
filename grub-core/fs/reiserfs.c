@@ -1062,6 +1062,11 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
   return grub_errno;
 }
 
+static void _forward_optimal_position(grub_uint32_t dir_id, grub_uint32_t, obj_id, grub_off_t initial_pos, grub_off_t* cur_pos, grub_uint64_t* key_offset) {
+	*cur_pos = 0;
+	*key_offset = 1;
+}
+
 static grub_ssize_t
 grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
@@ -1091,6 +1096,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
 		(unsigned long long) final_position,
 		(unsigned long long) (final_position - initial_position),
 		(unsigned long) len);
+  _forward_optimal_position(file, initial_position, current_position, current_key_offset);
   while (current_position < final_position)
     {
       grub_reiserfs_set_key_offset (&key, current_key_offset);
