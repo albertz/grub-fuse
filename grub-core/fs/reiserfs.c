@@ -1062,7 +1062,7 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
   return grub_errno;
 }
 
-static void _forward_optimal_position(grub_uint32_t dir_id, grub_uint32_t, obj_id, grub_off_t initial_pos, grub_off_t* cur_pos, grub_uint64_t* key_offset) {
+static void _forward_optimal_position(grub_uint32_t dir_id, grub_uint32_t obj_id, grub_off_t initial_pos, grub_off_t* cur_pos, grub_uint64_t* key_offset) {
 	*cur_pos = 0;
 	*key_offset = 1;
 }
