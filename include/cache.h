@@ -5,6 +5,13 @@
 //  Created by Albert Zeyer on 20.09.11.
 //  Copyright 2011 Albert Zeyer. All rights reserved.
 //
+//  code under zlib
+//
+// This is an implementation of this proposal:
+//   http://www.az2000.de/docs/memoization/
+//
+// The basic idea is to have a double linked list
+// combined with a map (could be a hash map or tree map).
 
 #ifndef grub_fuse_cache_h
 #define grub_fuse_cache_h

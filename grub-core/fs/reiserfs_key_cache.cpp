@@ -1,3 +1,12 @@
+//
+//  reiserfs_key_cache.h
+//  grub-fuse
+//
+//  Created by Albert Zeyer on 21.09.11.
+//  Copyright 2011 Albert Zeyer. All rights reserved.
+//
+//  code under GPL
+
 #include "reiserfs_key_cache.h"
 #include <cache.h>
 
