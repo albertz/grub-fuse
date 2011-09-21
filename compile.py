@@ -178,6 +178,6 @@ compile("grub-core/gnulib/getopt1.c")
 compile("grub-core/gnulib/rawmemchr.c")
 compile("grub-core/gnulib/basename-lgpl.c")
 
-cmd = "gcc " + LDFLAGS + " " + " ".join(map(quote, ofiles)) + " -o build/grub-mount"
+cmd = "g++ " + LDFLAGS + " " + " ".join(map(quote, ofiles)) + " -o build/grub-mount"
 print cmd
 assert os.system(cmd) == 0
