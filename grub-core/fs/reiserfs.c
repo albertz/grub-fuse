@@ -1096,6 +1096,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
   _forward_optimal_position(key.directory_id, key.object_id, initial_position, &current_position, &current_key_offset);
   while (current_position < final_position)
     {
+      _save_pos(key.directory_id, key.object_id, current_position, current_key_offset);
       grub_reiserfs_set_key_offset (&key, current_key_offset);
 
       if (grub_reiserfs_get_item (data, &key, &found) != GRUB_ERR_NONE)
