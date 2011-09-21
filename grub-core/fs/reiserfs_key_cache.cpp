@@ -5,6 +5,12 @@ struct CacheKey {
 	grub_uint32_t dir_id;
 	grub_uint32_t obj_id;
 	grub_off_t initial_pos;
+	bool operator==(const CacheKey& other) const {
+		return
+		dir_id == other.dir_id &&
+		obj_id == other.obj_id &&
+		initial_pos == other.initial_pos;
+	}
 	bool operator<(const CacheKey& other) const {
 		if(dir_id != other.dir_id) return dir_id < other.dir_id;
 		if(obj_id != other.obj_id) return obj_id < other.obj_id;

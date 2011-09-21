@@ -20,7 +20,7 @@ struct Cache {
 		Item *left, *right;
 		KeyType key;
 		ValueType value;
-		Item() : left(NULL), right(NULL) {}
+		Item() : left(this), right(this) {}
 	};
 	
 	KVmap kvmap;
@@ -29,17 +29,16 @@ struct Cache {
 	void _item_take_out(Item* item) {
 		item->left->right = item->right;
 		item->right->left = item->left;
-		item->left = NULL;
-		item->right = NULL;
+		item->left = item;
+		item->right = item;
 	}
 
 	void _check_list_item_count(Item* item) {
-		bool was_in_list = item->left || item->right;
-		if(was_in_list) return;
 		if(kvmap.size() <= CacheSize) return;
 		Item* bottom = round_link_item.left;
+		if(item == bottom) return; // we cannot remove the item which we are adding right now
 		_item_take_out(bottom);
-
+		kvmap.erase(bottom->key);
 	}
 
 	void _push_up_item(Item* item) {
@@ -47,8 +46,8 @@ struct Cache {
 		_item_take_out(item);
 		item->left = &round_link_item;
 		item->right = round_link_item.right;
-		round_link_item.right = item;
-		top = item;
+		item->left->right = item;
+		item->right->left = item;
 	}
 
 	Item* _return_item(Item& item) {
@@ -57,7 +56,7 @@ struct Cache {
 	}
 
 	Item* lower_bound(const KeyType& key) {
-		KVmap::iterator i = kvmap.lower_bound(key);
+		typename KVmap::iterator i = kvmap.lower_bound(key);
 		if(i != kvmap.end() && i->first == key)
 			return _return_item(i->second);
 		// i->first > key here.
