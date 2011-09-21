@@ -36,7 +36,7 @@ State
 
 In particular, I tested it now on MacOSX 10.7.1 with Fuse4x and a ReiserFS 3 partition on some USB disk.
 
-Performance varies wildly but is not very good (varying between 100kb/sec to 1mb/sec). This is probably because of the filesystem design of GRUB.
+Performance varies wildly. Directory reading is quite slow (could be improved much by some intelligent caching). File reading is ok with about 5 MB/sec (depending much on the media).
 
 The code is quite hackish! Cleanup by someone experiented with GRUB and/or FUSE is very welcome!
 
