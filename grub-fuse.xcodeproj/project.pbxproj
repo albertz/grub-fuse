@@ -3796,6 +3796,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 239A139B1428D58E005AF013 /* Build configuration list for PBXNativeTarget "grub-fuse" */;
 			buildPhases = (
+				239A1E03142A2FAB005AF013 /* ShellScript */,
 				239A138D1428D58E005AF013 /* Sources */,
 				239A138E1428D58E005AF013 /* Frameworks */,
 				239A138F1428D58E005AF013 /* CopyFiles */,
@@ -3833,6 +3834,22 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		239A1E03142A2FAB005AF013 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = ./compile.py;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		239A138D1428D58E005AF013 /* Sources */ = {
