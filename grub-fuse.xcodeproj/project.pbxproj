@@ -538,6 +538,7 @@
 		239A1DEF1428D642005AF013 /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 239A1B741428D641005AF013 /* misc.c */; };
 		239A1DF01428D642005AF013 /* raid.c in Sources */ = {isa = PBXBuildFile; fileRef = 239A1B781428D641005AF013 /* raid.c */; };
 		239A1DF11428D642005AF013 /* resolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 239A1B791428D641005AF013 /* resolve.c */; };
+		239A1E02142A24C7005AF013 /* reiserfs_key_cache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 239A1DFF142A24C7005AF013 /* reiserfs_key_cache.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1550,6 +1551,9 @@
 		239A1B781428D641005AF013 /* raid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = raid.c; sourceTree = "<group>"; };
 		239A1B791428D641005AF013 /* resolve.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = resolve.c; sourceTree = "<group>"; };
 		239A1B7A1428D641005AF013 /* update-grub_lib.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "update-grub_lib.in"; sourceTree = "<group>"; };
+		239A1DFE142A24A0005AF013 /* cache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cache.h; sourceTree = "<group>"; };
+		239A1DFF142A24C7005AF013 /* reiserfs_key_cache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = reiserfs_key_cache.cpp; sourceTree = "<group>"; };
+		239A1E00142A24C7005AF013 /* reiserfs_key_cache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = reiserfs_key_cache.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2104,6 +2108,8 @@
 				239A17591428D640005AF013 /* ntfs.c */,
 				239A175A1428D640005AF013 /* ntfscomp.c */,
 				239A175B1428D640005AF013 /* reiserfs.c */,
+				239A1DFF142A24C7005AF013 /* reiserfs_key_cache.cpp */,
+				239A1E00142A24C7005AF013 /* reiserfs_key_cache.h */,
 				239A175C1428D640005AF013 /* sfs.c */,
 				239A175D1428D640005AF013 /* tar.c */,
 				239A175E1428D640005AF013 /* udf.c */,
@@ -3165,6 +3171,7 @@
 		239A196D1428D640005AF013 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				239A1DFE142A24A0005AF013 /* cache.h */,
 				239A196E1428D640005AF013 /* grub */,
 				239A1AA41428D641005AF013 /* multiboot.h */,
 				239A1AA51428D641005AF013 /* multiboot2.h */,
@@ -4363,6 +4370,7 @@
 				239A1DEF1428D642005AF013 /* misc.c in Sources */,
 				239A1DF01428D642005AF013 /* raid.c in Sources */,
 				239A1DF11428D642005AF013 /* resolve.c in Sources */,
+				239A1E02142A24C7005AF013 /* reiserfs_key_cache.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
