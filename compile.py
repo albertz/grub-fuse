@@ -55,7 +55,7 @@ configh.close()
 
 open("build/config-util.h", "w").write("")
 
-re_grubmodinit = re.compile("GRUB_MOD_INIT\((.+)\)")
+re_grubmodinit = re.compile("GRUB_MOD_INIT\s*\((.+)\)")
 ofiles = []
 grubmods = []
 def compile(fn):
