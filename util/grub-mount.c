@@ -325,9 +325,9 @@ char* full_dev_name = NULL;
 
 int partition_iterhook(grub_disk_t disk, const grub_partition_t partition) {
 	char* part_name = grub_partition_get_name(partition);
-	printf("*** part: %s, index: %i\n", part_name, partition->index);
+	printf("*** part: %s, index: %i\n", part_name, partition->number);
 	char buf[1024];
-	snprintf(buf, sizeof(buf), "%ss%i", grub_env_get ("root"), partition->index + 1);
+	snprintf(buf, sizeof(buf), "%ss%i", grub_env_get ("root"), partition->number + 1);
 	if(strcmp(buf, images[0]) == 0) {
 		printf("*** found: matches to %s\n", images[0]);
 		full_dev_name = malloc(1024);
